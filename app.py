@@ -44,22 +44,33 @@ def process_image():
     if 'image' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    files = request.files.getlist('image')
+    if len(files) == 0:
+        return jsonify({'error': 'No selected files'}), 400
 
-    filepath = os.path.join('uploads', file.filename)
-    file.save(filepath)
+    img_array = []
+    filepaths = []
+    for file in files:
+        filepath = os.path.join('uploads', file.filename)
+        file.save(filepath)
+        filepaths.append(filepath)
+        
+        image = load_img(filepath, target_size=(224, 224))
+        image = img_to_array(image)
+        image = image / 255.0
+        img_array.append(image)
+    
+    while len(img_array) < 3:
+        img_array.append(img_array[-1])  # Duplicate last image if less than 3
+    
+    img_array = np.array(img_array[:3])  # Ensure only 3 images are used
 
-    image = load_img(filepath, target_size=(224, 224))
-    image = img_to_array(image)
-    image = np.expand_dims(image, axis=0)
-    image = image / 255.0
-
-    prediction = cnn_model.predict(image)
-    predicted_label = image_labels[np.argmax(prediction)]
-    os.remove(filepath)
-
+    prediction = cnn_model.predict(img_array)
+    predicted_label = image_labels[np.argmax(np.mean(prediction, axis=0))]
+    
+    for path in filepaths:
+        os.remove(path)
+    
     return jsonify({'prediction': predicted_label})
 
 @app.route('/predict', methods=['POST'])
