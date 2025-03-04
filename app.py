@@ -99,9 +99,9 @@ def predict():
             rf_pred = random.predict(features)[0]
             prediction = structured_labels[rf_pred]
             
-        # elif model_choice == "naivebayes":
-        #     nb_pred = naive.predict(features)[0]
-        #     prediction = structured_labels[nb_pred]
+        elif model_choice == "naivebayes":
+            nb_pred = naive.predict(features)[0]
+            prediction = structured_labels[nb_pred]
             
         else:
             return jsonify({'error': 'Model not recognized'}), 400
